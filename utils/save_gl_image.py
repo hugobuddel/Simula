@@ -16,8 +16,8 @@ class ImageCommand(gdb.Command):
         data = str(gdb.selected_frame().read_var("data"))
 
         function_name = str(gdb.selected_frame().name())
-        file_name = "gl.bin/" + function_name + "." + stride + "." + width + "." + height + "." + src_x + "." + src_y + "." + dst_x + "." + dst_y + "." + data + ".bin"
-        gdb.execute("dump binary memory " + file_name + " data (data + stride * height)")
+        file_name = f"gl.bin/{function_name}.{stride}.{width}.{height}.{src_x}.{src_y}.{dst_x}.{dst_y}.{data}.bin"
+        gdb.execute(f"dump binary memory {file_name} data (data + stride * height)")
 
 
 # This registers our class to the gdb runtime at "source" time.
