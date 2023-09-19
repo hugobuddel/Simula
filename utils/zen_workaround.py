@@ -15,12 +15,11 @@ MSR = 0xc0011020
 BIT = 1 << 54
 
 if not os.path.exists('/dev/cpu/0/msr'):
-    ret = os.system('modprobe msr')
-    if ret:
+    if ret := os.system('modprobe msr'):
         sys.exit(ret)
 
 def read_msr(cpu):
-    msr = os.open('/dev/cpu/{}/msr'.format(cpu), os.O_RDONLY)
+    msr = os.open(f'/dev/cpu/{cpu}/msr', os.O_RDONLY)
     os.lseek(msr, MSR, os.SEEK_SET)
     (val,) = struct.unpack('<q', os.read(msr, 8))
     os.close(msr)
@@ -31,15 +30,13 @@ cpus = [cpu for cpu in os.listdir('/dev/cpu') if cpu.isdigit()]
 if not args.check:
     for cpu in cpus:
         val = read_msr(cpu)
-        if args.reset:
-            if val & BIT == 0:
-                continue
+        if args.reset and val & BIT == 0 or not args.reset and val & BIT:
+            continue
+        elif args.reset:
             val &= ~BIT
         else:
-            if val & BIT:
-                continue
             val |= BIT
-        msr = os.open('/dev/cpu/{}/msr'.format(cpu), os.O_WRONLY)
+        msr = os.open(f'/dev/cpu/{cpu}/msr', os.O_WRONLY)
         os.lseek(msr, MSR, os.SEEK_SET)
         os.write(msr, struct.pack('<q', val))
         os.close(msr)
@@ -76,13 +73,13 @@ if not args.reset:
 
 msrs = [read_msr(cpu) & BIT for cpu in cpus]
 
-if all(msr for msr in msrs):
-    if ssb_status in ('mitigated', 'immutable') or args.check:
+if all(msrs):
+    if ssb_status in {'mitigated', 'immutable'} or args.check:
         print('Zen workaround in place')
     else:
         print('Zen workaround maybe in place.')
 elif args.reset or args.check:
-    if all(not msr for msr in msrs):
+    if not any(msrs):
         print('Zen workaround disabled')
     elif args.reset:
         print('Zen workaround somehow not entirely disabled?')
